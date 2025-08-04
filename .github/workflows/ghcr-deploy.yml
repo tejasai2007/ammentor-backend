@@ -86,4 +86,4 @@ jobs:
 
             # 5. Start the services. Docker Compose will see the new backend
             #    image and intelligently recreate only that container.
-            docker-compose up -d
+            docker compose up -d
