@@ -67,7 +67,7 @@ jobs:
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.VM_SSH_KEY }}
           script: |
             # Pull the image tagged with the specific branch name (e.g., 'praveshan')
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
