@@ -62,23 +62,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: SSH into VM and redeploy
-        uses: appleboy/ssh-action@master
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USERNAME }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            # Pull the image tagged with the specific branch name (e.g., 'praveshan')
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            # --- DEPLOYMENT SCRIPT ---
             
-            # Stop and remove the old container to avoid conflicts
-            docker stop my-app-container || true
-            docker rm my-app-container || true
+            # 1. Navigate to the directory with your docker-compose.yml file.
+           
+            cd /home/s0lus/praveshan/
             
-            # Run the new container using the correct image tag
-            docker run -d \
-              --restart always \
-              -p 8080:80 \
-              --name my-app-container \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            # 2. Set the TAG variable for docker-compose to use.
+            export TAG=${{ github.ref_name }}
+
+            # 3. Log in to GitHub Container Registry to pull the private image.
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 4. Pull the latest version of your backend image.
+            docker pull ghcr.io/amfoss/ammentor-backend:$TAG
+
+            # 5. Start the services. Docker Compose will see the new backend
+            #    image and intelligently recreate only that container.
+            docker-compose up -d
