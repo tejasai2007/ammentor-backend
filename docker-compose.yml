@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   backend:
-    image: registry.digitalocean.com/praveshan/ammentor-backend-praveshan:latest
+    image: ghcr.io/amfoss/ammentor-backend:${TAG:-praveshan}
     container_name: praveshan-ammentor-backend
     restart: always
     ports:
