@@ -31,4 +31,4 @@ app.include_router(submissions.router, prefix="/submissions", tags=["Submissions
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to amMentor 🚀"}
+    return {"message": "Welcome to amMentor"}
