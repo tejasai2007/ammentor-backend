@@ -32,6 +32,23 @@ def _to_date(d):
         return d
     return getattr(d, "date", lambda: None)()
 
+def mentor_mentee_map(db:Session):
+    mentors=(
+        db.query(models.User).filter(models.User.role == "mentor").all()
+    )
+    mentees=(
+        db.query(models.User).filter(models.User.role == "mentee").all()
+    )
+
+    for mentor in mentors:
+        for mentee in mentees:
+            if not db.query(models.MentorMenteeMap).filter_by(mentor_id=mentor.id, mentee_id=mentee.id).first():
+                map_entry = models.MentorMenteeMap(mentor_id=mentor.id, mentee_id=mentee.id)
+                db.add(map_entry)
+    db.commit()
+    db.refresh(map_entry)
+    return "Mentor Mentee Mapping completed successfully"
+
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
@@ -76,6 +93,33 @@ def submit_task(db: Session, mentee_id: int, task_id: int, start_date: date, com
             sheet.update_cell(row, 1, mentee.name)
 
         sheet.update_cell(row, task.task_no + 2, commit_hash)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, SCOPE)
+        client = gspread.authorize(credentials)
+        if(task.track_id == 1):
+            sheet = client.open("Copy of Praveshan 2025 Master DB").worksheet("S1 Submissions") # Change sheet name
+            cell = sheet.find(mentee.name)
+            print(sheet)
+            if not cell:
+                name_column = sheet.col_values(1)
+                row = len(name_column) + 1
+                sheet.update_cell(row, 1, mentee.name)
+                sheet.update_cell(row, task.task_no+2, commit_hash)
+            else:
+                row = cell.row
+                sheet.update_cell(row, task.task_no+2, commit_hash)
+        elif(task.track_id == 2):
+            sheet = client.open("Copy of Praveshan 2025 Master DB").worksheet("S2 Submissions") # Change sheet name
+            cell = sheet.find(mentee.name)
+            if not cell:
+                name_column = sheet.col_values(1)
+                row = len(name_column) + 1
+                sheet.update_cell(row, 1, mentee.name)
+                sheet.update_cell(row, task.task_no+2, commit_hash)
+            else:
+                row = cell.row
+                sheet.update_cell(row, task.task_no+2, commit_hash)
+        
+        
 
     db.add(submission)
     db.commit()
@@ -158,6 +202,7 @@ def get_sheet_data():
     worksheet = client.open_by_key(os.getenv("GOOGLE_SHEET_ID")).worksheet("Praveshan Phase 3")
     expected_headers = ["Name", "Email Address","Faction name"]
     return worksheet.get_all_records(expected_headers=expected_headers)
+    
 
 def sync_users_from_sheet():
     db: Session = SessionLocal()
@@ -167,11 +212,10 @@ def sync_users_from_sheet():
         for row in rows:
             Faction_name = row.get("Faction name", "")
             email = row.get("Email Address", "").strip()
-            name = row.get("Name", "").strip()
+            name = row.get("Full name", "").strip()
             if not email or not name:
                 continue
             if get_user_by_email(db, email):
-
                 continue 
             if Faction_name=="S2+":
                 track = 2
@@ -185,3 +229,4 @@ def sync_users_from_sheet():
         print(f"Error syncing users: {e}")
     finally:
         db.close()
+
